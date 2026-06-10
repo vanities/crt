@@ -4,14 +4,86 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#0a0a0a" />
+    <meta
+      name="description"
+      content="A game engine that is a broadcast monitor — the components of a PVM/BVM rebuilt as a WebGL2 signal chain."
+    />
     <link
       rel="icon"
       href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📺</text></svg>"
     />
-    <title>CRT · a broadcast-monitor game engine</title>
+    <title>CRT · a game engine that is a broadcast monitor</title>
   </head>
   <body>
+    <header class="site-head">
+      <h1 class="site-title">CRT</h1>
+      <p class="site-sub">a game engine that is a broadcast monitor</p>
+      <nav class="site-nav">
+        <a href="https://github.com/vanities/crt">source</a>
+        <span class="dot">·</span>
+        <a href="https://github.com/vanities/crt/blob/main/docs/ASSETS.md">asset manual</a>
+        <span class="dot">·</span>
+        <a href="https://github.com/vanities/crt/blob/main/docs/ARCHITECTURE.md">signal chain</a>
+        <span class="dot">·</span>
+        <a href="https://github.com/vanities/crt/blob/main/docs/CARTRIDGES.md">make a game</a>
+      </nav>
+      <p class="site-age" id="site-age">CRT is 0 days old.</p>
+    </header>
+
     <div id="app"></div>
+
+    <main class="lore">
+      <section>
+        <h2>Rebuilding the soul of a PVM</h2>
+        <p>
+          This is not a scanline filter. The monitor above runs the actual plumbing of a
+          broadcast CRT: an NTSC encoder modulates the game onto a subcarrier, a comb
+          filter tears luma from chroma and fails in all the correct ways, an electron
+          beam blooms across P22 phosphor behind an aperture grille. The dot crawl is
+          computed, not painted.
+        </p>
+        <p>
+          Press <kbd>P</kbd> for power. Then press <kbd>C</kbd> and watch the same game
+          re-patched live through composite, S-Video, and RGB.
+        </p>
+      </section>
+
+      <section>
+        <h2>The signal chain</h2>
+        <pre class="chain">cartridge → encoder → comb filter → demodulator
+   → deflection &amp; beam → phosphor persistence
+      → halation → grille → curved glass → you</pre>
+        <p>
+          Seven GLSL passes, each one a component you could point to on a real chassis.
+          Degauss thunks. Power-off collapses the raster to a white dot. The 15.7&nbsp;kHz
+          flyback whine is in there too, if you can still hear it.
+        </p>
+      </section>
+
+      <section>
+        <h2>Built for humans and machines</h2>
+        <p>
+          Every asset is a schema-validated JSON text grid — sprites, sounds, tilemaps,
+          even the font. No binary blobs, no registration step. Drop a file in
+          <code>assets/</code>, the tube hot-reloads. A new game is one folder with a
+          <code>cart.ts</code>. An AI can contribute a sprite as easily as it can write a
+          sentence; that is the point.
+        </p>
+        <p class="cta-row">
+          <a class="cta" href="https://github.com/vanities/crt">VIEW SOURCE</a>
+          <a class="cta ghost" href="https://github.com/vanities/crt/blob/main/CLAUDE.md">AGENT MANUAL</a>
+        </p>
+      </section>
+    </main>
+
+    <footer class="site-foot">
+      <p class="counter-row">
+        FIELDS DRAWN <span class="odo" id="fields-odo">0000000</span>
+      </p>
+      <p>© 2026 vanities · phosphor never really fades</p>
+    </footer>
+
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

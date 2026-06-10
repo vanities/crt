@@ -11,6 +11,31 @@ import { Monitor, CONNECTION_LABEL } from './monitor/monitor'
 import { createPanel } from './monitor/panel'
 
 const INPUT_NAMES = ['LINE A', 'LINE B', 'LINE C']
+const BORN = Date.UTC(2026, 5, 10) // the day the tube first lit
+
+/** Page chrome around the monitor: day counter + live field odometer. */
+function initChrome(): { tickField: (powered: boolean) => void } {
+  const age = document.getElementById('site-age')
+  if (age) {
+    const days = Math.max(0, Math.floor((Date.now() - BORN) / 86_400_000))
+    age.textContent = `CRT is ${days} day${days === 1 ? '' : 's'} old.`
+  }
+  const odo = document.getElementById('fields-odo')
+  let fields = 0
+  let lastPowered = false
+  return {
+    tickField: (powered: boolean) => {
+      if (powered) fields++
+      if (powered !== lastPowered) {
+        lastPowered = powered
+        document.body.classList.toggle('powered', powered)
+      }
+      if (odo && powered && fields % 30 === 0) {
+        odo.textContent = String(fields % 10_000_000).padStart(7, '0')
+      }
+    },
+  }
+}
 
 function fatal(err: unknown): void {
   const msg = err instanceof Error ? (err.stack ?? err.message) : String(err)
@@ -74,6 +99,7 @@ function boot(): void {
 
   const panel = createPanel(root, params, panelInputs, handlers)
   const monitor = new Monitor(panel.canvas, params, audio)
+  const chrome = initChrome()
 
   // first user gesture anywhere unlocks audio (browser autoplay policy)
   const unlock = () => audio.unlock()
@@ -120,6 +146,7 @@ function boot(): void {
       }
       monitor.render(ctx.fb, t, frame)
       panel.sync(monitor.state(), active, CONNECTION_LABEL[monitor.connection])
+      chrome.tickField(monitor.powered)
     },
   )
   loop.start()
