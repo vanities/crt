@@ -5,8 +5,7 @@ import type { Framebuffer } from '../engine/framebuffer'
 import type { Connection } from '../engine/cartridge'
 import encodeSrc from './shaders/encode.glsl?raw'
 import decodeSrc from './shaders/decode.glsl?raw'
-import beamSrc from './shaders/beam.glsl?raw'
-import persistSrc from './shaders/persist.glsl?raw'
+import phosphorSrc from './shaders/phosphor.glsl?raw'
 import downsampleSrc from './shaders/downsample.glsl?raw'
 import blurSrc from './shaders/blur.glsl?raw'
 import screenSrc from './shaders/screen.glsl?raw'
@@ -27,17 +26,29 @@ export const CONNECTION_LABEL: Record<Connection, string> = {
   rgb: 'RGB',
 }
 
+const FIELD_RATE = 60 // fields per second the deflection runs at
+
+// P22-ish phosphor time constants (seconds). Blue dies first; red lingers.
+const TAU_FAST: [number, number, number] = [0.0034, 0.0026, 0.0019]
+const TAU_SLOW = 0.045
+const SLOW_TINT: [number, number, number] = [1.0, 0.5, 0.26] // the orange afterglow
+
 /**
  * The tube. Owns the WebGL signal chain:
- *   source fb → encode → decode → beam → persistence → halation → faceplate
- * plus the electromechanical state machines (power, degauss, input switch).
+ *   source fb → encode → decode → beam-scan phosphor simulation → halation
+ *   → faceplate — plus the electromechanical state machines (power,
+ *   degauss, input switch).
+ *
+ * The phosphor stage is temporal: a field-phase clock advances at 60
+ * fields/s in wall time and each display refresh excites only the raster
+ * slice the beam swept during that interval, integrating P22 decay in
+ * closed form. On high-refresh displays this produces a true rolling scan.
  */
 export class Monitor {
   private glc: GLCtx
   private pEncode: Pass
   private pDecode: Pass
-  private pBeam: Pass
-  private pPersist: Pass
+  private pPhos: Pass
   private pDown: Pass
   private pBlur: Pass
   private pScreen: Pass
@@ -49,10 +60,12 @@ export class Monitor {
   private srcW = 0
   private srcH = 0
 
-  // output-resolution targets
-  private tBeam: Target | null = null
-  private tPhosA: Target | null = null
-  private tPhosB: Target | null = null
+  // output-resolution phosphor set: shared light target + ping-pong states
+  private texLight: WebGLTexture | null = null
+  private texFast: [WebGLTexture, WebGLTexture] | null = null
+  private texSlow: [WebGLTexture, WebGLTexture] | null = null
+  private fboPhos: [Target, Target] | null = null // writes (light, fastN, slowN)
+  private flip = 0
   private tGlowA: Target | null = null
   private tGlowB: Target | null = null
   private outW = 0
@@ -64,6 +77,9 @@ export class Monitor {
   private degaussT = 99
   private switchT = 99
   private lastT = -1
+  private fieldPhase = 0
+  private dtEma = 1 / 60
+  private frames = 0
   connection: Connection = 'composite'
   scan480i = false
   underscan = false
@@ -86,12 +102,11 @@ export class Monitor {
     this.glc = new GLCtx(canvas)
     this.pEncode = this.glc.compile('encode', encodeSrc)
     this.pDecode = this.glc.compile('decode', decodeSrc)
-    this.pBeam = this.glc.compile('beam', beamSrc)
-    this.pPersist = this.glc.compile('persist', persistSrc)
+    this.pPhos = this.glc.compile('phosphor', phosphorSrc, { mrt: true })
     this.pDown = this.glc.compile('downsample', downsampleSrc)
     this.pBlur = this.glc.compile('blur', blurSrc)
     this.pScreen = this.glc.compile('screen', screenSrc)
-    console.info(`[monitor] signal chain compiled (7 passes) in ${(performance.now() - t0).toFixed(1)}ms`)
+    console.info(`[monitor] signal chain compiled (6 passes) in ${(performance.now() - t0).toFixed(1)}ms`)
   }
 
   // ── controls ──────────────────────────────────────────────────────────
@@ -168,12 +183,21 @@ export class Monitor {
 
   render(fb: Framebuffer | null, t: number, frame: number): void {
     const gl = this.glc.gl
-    const dt = this.lastT < 0 ? 0 : Math.min(t - this.lastT, 0.1)
+    const dt = this.lastT < 0 ? 1 / 60 : Math.min(Math.max(t - this.lastT, 1 / 480), 0.1)
     this.lastT = t
     this.powerT += dt
     this.degaussT += dt
     this.switchT += dt
     if (this.osdT > 0) this.osdT -= dt
+
+    // measure the display so we can report beam slices per field
+    this.dtEma += (dt - this.dtEma) * 0.05
+    if (++this.frames === 240) {
+      const hz = 1 / this.dtEma
+      console.info(
+        `[monitor] display ≈${hz.toFixed(1)} Hz → ${(hz / FIELD_RATE).toFixed(2)} beam slice(s) per field`,
+      )
+    }
 
     if (!this.resize()) return
 
@@ -191,7 +215,7 @@ export class Monitor {
       gl.bindTexture(gl.TEXTURE_2D, this.texSrc)
       gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, fb.w, fb.h, gl.RGBA, gl.UNSIGNED_BYTE, fb.data)
     }
-    if (!this.texSrc || !this.tSig || !this.tVideo) return
+    if (!this.texSrc || !this.tSig || !this.tVideo || !this.fboPhos) return
 
     const P = this.params
     const mode = this.connection === 'rgb' ? 2 : this.connection === 'svideo' ? 1 : 0
@@ -231,46 +255,50 @@ export class Monitor {
       .f('u_frame', frame % 1024)
     this.pDecode.draw(this.tVideo)
 
-    // 3 — beam scanout at output resolution
-    const field = this.scan480i ? (frame % 2 === 0 ? 0.25 : -0.25) : 0
+    // 3 — beam scan + phosphor integration (the temporal core)
+    const span = Math.min(dt * FIELD_RATE, 1)
+    this.fieldPhase = (this.fieldPhase + span) % 1
+    const field = this.scan480i ? (Math.floor(this.fieldPhase * 2) % 2 === 0 ? 0.25 : -0.25) : 0
     const vroll = switchEnv > 0 ? switchEnv * switchEnv * 0.4 * Math.sin(t * 50) : 0
-    this.pBeam
+    const persist = P.get('persist')
+    const slowFrac = Math.pow(persist, 1.6) * 0.12
+    const read = this.flip
+    const write = 1 - this.flip
+    this.pPhos
       .use()
       .tex(0, 'u_video', this.tVideo.tex)
+      .tex(1, 'u_fastPrev', this.texFast![read])
+      .tex(2, 'u_slowPrev', this.texSlow![read])
       .f('u_lines', this.srcH)
       .f('u_scan', P.get('scanline'))
       .f('u_underscan', this.underscan ? 0.13 : 0)
       .f('u_hvdelay', this.hvdelay ? 1 : 0)
-      .f('u_field', field)
       .f('u_vroll', vroll)
-    this.pBeam.draw(this.tBeam!)
+      .f('u_field', field)
+      .f('u_ph1', this.fieldPhase)
+      .f('u_span', span)
+      .f('u_dt', dt)
+      .f3('u_tauF', TAU_FAST[0], TAU_FAST[1], TAU_FAST[2])
+      .f('u_tauS', TAU_SLOW)
+      .f3('u_slowIn', slowFrac * SLOW_TINT[0], slowFrac * SLOW_TINT[1], slowFrac * SLOW_TINT[2])
+      .f('u_bias', this.glc.hdr ? 0 : 0.0022)
+    this.pPhos.draw(this.fboPhos[write])
+    this.flip = write
 
-    // 4 — phosphor persistence (ping-pong)
-    const persist = P.get('persist')
-    const decay = persist <= 0.001 ? 0 : 0.5 + persist * 0.45
-    this.pPersist
-      .use()
-      .tex(0, 'u_beam', this.tBeam!.tex)
-      .tex(1, 'u_prev', this.tPhosB!.tex)
-      .f('u_decay', decay)
-    this.pPersist.draw(this.tPhosA!)
-    ;[this.tPhosA, this.tPhosB] = [this.tPhosB, this.tPhosA]
-    const phos = this.tPhosB! // most recent
-
-    // 5 — halation: bright-pass downsample + separable blur
-    this.pDown.use().tex(0, 'u_src', phos.tex).f2('u_texel', 1 / phos.w, 1 / phos.h)
+    // 4 — halation: bright-pass downsample + separable blur (linear light)
+    this.pDown.use().tex(0, 'u_src', this.texLight!).f2('u_texel', 1 / this.outW, 1 / this.outH)
     this.pDown.draw(this.tGlowA!)
     this.pBlur.use().tex(0, 'u_src', this.tGlowA!.tex).f2('u_dir', 1.6 / this.tGlowA!.w, 0)
     this.pBlur.draw(this.tGlowB!)
     this.pBlur.use().tex(0, 'u_src', this.tGlowB!.tex).f2('u_dir', 0, 1.6 / this.tGlowB!.h)
     this.pBlur.draw(this.tGlowA!)
 
-    // 6 — faceplate to canvas
+    // 5 — faceplate to canvas
     const pw = this.powerEnvelope()
     const pitch = Math.min(8, Math.max(2, Math.round(this.outH / 240)))
     this.pScreen
       .use()
-      .tex(0, 'u_phos', phos.tex)
+      .tex(0, 'u_phos', this.texLight!)
       .tex(1, 'u_glow', this.tGlowA!.tex)
       .f('u_mask', P.get('mask'))
       .f('u_maskPitch', pitch)
@@ -326,6 +354,21 @@ export class Monitor {
     console.info(`[monitor] source targets ${w}x${h} → signal ${sigW}x${h}`)
   }
 
+  private destroyPhosphorSet(): void {
+    const gl = this.glc.gl
+    if (this.fboPhos) {
+      gl.deleteFramebuffer(this.fboPhos[0].fbo)
+      gl.deleteFramebuffer(this.fboPhos[1].fbo)
+    }
+    if (this.texLight) gl.deleteTexture(this.texLight)
+    for (const t of this.texFast ?? []) gl.deleteTexture(t)
+    for (const t of this.texSlow ?? []) gl.deleteTexture(t)
+    this.fboPhos = null
+    this.texLight = null
+    this.texFast = null
+    this.texSlow = null
+  }
+
   private resize(): boolean {
     const dpr = Math.min(window.devicePixelRatio || 1, 2)
     const cssW = this.canvas.clientWidth
@@ -338,21 +381,31 @@ export class Monitor {
     const t0 = performance.now()
     this.canvas.width = w
     this.canvas.height = h
-    this.glc.deleteTarget(this.tBeam)
-    this.glc.deleteTarget(this.tPhosA)
-    this.glc.deleteTarget(this.tPhosB)
+    const fmt = this.glc.hdr ? 'rgba16f' : 'rgba8'
+
+    this.destroyPhosphorSet()
     this.glc.deleteTarget(this.tGlowA)
     this.glc.deleteTarget(this.tGlowB)
-    this.tBeam = this.glc.target(w, h, 'linear')
-    this.tPhosA = this.glc.target(w, h, 'linear')
-    this.tPhosB = this.glc.target(w, h, 'linear')
+
+    this.texLight = this.glc.texture(w, h, 'linear', fmt)
+    this.texFast = [this.glc.texture(w, h, 'nearest', fmt), this.glc.texture(w, h, 'nearest', fmt)]
+    this.texSlow = [this.glc.texture(w, h, 'nearest', fmt), this.glc.texture(w, h, 'nearest', fmt)]
+    // each FBO writes (light, fast[i], slow[i]) while sampling the other pair
+    this.fboPhos = [
+      this.glc.targetFrom([this.texLight, this.texFast[0], this.texSlow[0]], w, h),
+      this.glc.targetFrom([this.texLight, this.texFast[1], this.texSlow[1]], w, h),
+    ]
+    this.flip = 0
+
     const gw = Math.max(2, w >> 1)
     const gh = Math.max(2, h >> 1)
-    this.tGlowA = this.glc.target(gw, gh, 'linear')
-    this.tGlowB = this.glc.target(gw, gh, 'linear')
+    this.tGlowA = this.glc.target(gw, gh, 'linear', fmt)
+    this.tGlowB = this.glc.target(gw, gh, 'linear', fmt)
     this.outW = w
     this.outH = h
-    console.info(`[monitor] output ${w}x${h} (dpr ${dpr}) targets rebuilt in ${(performance.now() - t0).toFixed(1)}ms`)
+    console.info(
+      `[monitor] output ${w}x${h} (dpr ${dpr}, ${fmt}) targets rebuilt in ${(performance.now() - t0).toFixed(1)}ms`,
+    )
     return true
   }
 }

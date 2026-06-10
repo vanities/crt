@@ -65,6 +65,11 @@ void main() {
   col *= 1.0 - 0.16 * r2;       // vignette
   col *= u_powerBright;
 
+  // phosphor light is linear — soft shoulder for rolling-scan peaks, then gamma
+  col = max(col, 0.0);
+  col = col * 1.25 / (1.0 + 0.25 * col);
+  col = pow(col, vec3(1.0 / 2.2));
+
   // glass reflections (the room exists)
   float g1 = pow(max(0.0, 1.0 - length(v_uv - vec2(0.32, 0.78)) * 1.35), 3.0) * 0.045;
   float g2 = pow(max(0.0, 1.0 - length(v_uv - vec2(0.78, 0.18)) * 2.2), 4.0) * 0.018;

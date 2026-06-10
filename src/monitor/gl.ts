@@ -16,7 +16,12 @@ void main() {
 const FRAG_HEADER = `#version 300 es
 precision highp float;
 in vec2 v_uv;
-out vec4 o_color;
+layout(location = 0) out vec4 o_color;
+`
+
+/** Extra MRT outputs appended for passes that write state buffers. */
+const MRT_OUTPUTS = `layout(location = 1) out vec4 o_state1;
+layout(location = 2) out vec4 o_state2;
 `
 
 /** Shared constants/helpers prepended to every fragment shader. */
@@ -56,8 +61,12 @@ export interface Target {
   h: number
 }
 
+export type TexFormat = 'rgba8' | 'rgba16f'
+
 export class GLCtx {
   readonly gl: WebGL2RenderingContext
+  /** float render targets available — linear-light phosphor state wants this */
+  readonly hdr: boolean
 
   constructor(canvas: HTMLCanvasElement) {
     const gl = canvas.getContext('webgl2', {
@@ -78,14 +87,20 @@ export class GLCtx {
       e.preventDefault()
       console.error('[gl] context lost')
     })
-    console.info('[gl] WebGL2 ready:', gl.getParameter(gl.RENDERER) ?? 'unknown renderer')
+    this.hdr = gl.getExtension('EXT_color_buffer_float') !== null
+    console.info(
+      '[gl] WebGL2 ready:',
+      gl.getParameter(gl.RENDERER) ?? 'unknown renderer',
+      this.hdr ? '· float targets (16F phosphor state)' : '· 8-bit fallback (no EXT_color_buffer_float)',
+    )
   }
 
-  compile(name: string, fragBody: string): Pass {
+  compile(name: string, fragBody: string, opts: { mrt?: boolean } = {}): Pass {
     const t0 = performance.now()
     const gl = this.gl
+    const header = FRAG_HEADER + (opts.mrt ? MRT_OUTPUTS : '')
     const vs = this.shader(gl.VERTEX_SHADER, VERT, `${name}.vert`)
-    const fs = this.shader(gl.FRAGMENT_SHADER, FRAG_HEADER + COMMON + fragBody, `${name}.frag`)
+    const fs = this.shader(gl.FRAGMENT_SHADER, header + COMMON + fragBody, `${name}.frag`)
     const prog = gl.createProgram()
     gl.attachShader(prog, vs)
     gl.attachShader(prog, fs)
@@ -116,11 +131,15 @@ export class GLCtx {
     return sh
   }
 
-  texture(w: number, h: number, filter: 'nearest' | 'linear'): WebGLTexture {
+  texture(w: number, h: number, filter: 'nearest' | 'linear', fmt: TexFormat = 'rgba8'): WebGLTexture {
     const gl = this.gl
     const tex = gl.createTexture()
     gl.bindTexture(gl.TEXTURE_2D, tex)
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, null)
+    if (fmt === 'rgba16f') {
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA16F, w, h, 0, gl.RGBA, gl.HALF_FLOAT, null)
+    } else {
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, null)
+    }
     const f = filter === 'nearest' ? gl.NEAREST : gl.LINEAR
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, f)
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, f)
@@ -129,18 +148,28 @@ export class GLCtx {
     return tex
   }
 
-  target(w: number, h: number, filter: 'nearest' | 'linear'): Target {
+  target(w: number, h: number, filter: 'nearest' | 'linear', fmt: TexFormat = 'rgba8'): Target {
+    const tex = this.texture(w, h, filter, fmt)
+    return this.targetFrom([tex], w, h)
+  }
+
+  /** Build an FBO over existing textures; >1 texture = MRT (drawBuffers set). */
+  targetFrom(texs: WebGLTexture[], w: number, h: number): Target {
     const gl = this.gl
-    const tex = this.texture(w, h, filter)
     const fbo = gl.createFramebuffer()
     gl.bindFramebuffer(gl.FRAMEBUFFER, fbo)
-    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0)
+    texs.forEach((tex, i) => {
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + i, gl.TEXTURE_2D, tex, 0)
+    })
+    if (texs.length > 1) {
+      gl.drawBuffers(texs.map((_, i) => gl.COLOR_ATTACHMENT0 + i))
+    }
     const status = gl.checkFramebufferStatus(gl.FRAMEBUFFER)
     if (status !== gl.FRAMEBUFFER_COMPLETE) {
-      throw new Error(`[gl] framebuffer incomplete (0x${status.toString(16)}) at ${w}x${h}`)
+      throw new Error(`[gl] framebuffer incomplete (0x${status.toString(16)}) at ${w}x${h} (${texs.length} attachment(s))`)
     }
     gl.bindFramebuffer(gl.FRAMEBUFFER, null)
-    return { tex, fbo, w, h }
+    return { tex: texs[0], fbo, w, h }
   }
 
   deleteTarget(t: Target | null): void {
@@ -180,6 +209,11 @@ export class Pass {
 
   f2(name: string, x: number, y: number): this {
     this.gl.uniform2f(this.loc(name), x, y)
+    return this
+  }
+
+  f3(name: string, x: number, y: number, z: number): this {
+    this.gl.uniform3f(this.loc(name), x, y, z)
     return this
   }
 

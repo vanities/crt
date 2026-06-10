@@ -52,12 +52,15 @@
       <section>
         <h2>The signal chain</h2>
         <pre class="chain">cartridge → encoder → comb filter → demodulator
-   → deflection &amp; beam → phosphor persistence
+   → beam clock → phosphor  E·e^(−t/τ)  excite/decay
       → halation → grille → curved glass → you</pre>
         <p>
-          Seven GLSL passes, each one a component you could point to on a real chassis.
-          Degauss thunks. Power-off collapses the raster to a white dot. The 15.7&nbsp;kHz
-          flyback whine is in there too, if you can still hear it.
+          The phosphor stage is a temporal simulation, not an overlay: a beam clock
+          sweeps the raster in wall time and P22 decay is integrated in closed form,
+          per channel — blue dies in 2&nbsp;ms, red lingers, trails fade through orange.
+          On a 120&nbsp;Hz display the scan genuinely rolls. Degauss thunks. Power-off
+          collapses to a white dot. The 15.7&nbsp;kHz flyback whine is in there too,
+          if you can still hear it.
         </p>
       </section>
 
