@@ -81,6 +81,7 @@ const state = {
   r3: null as Renderer3D | null,
   terrain: null as Mesh | null,
   stars: [] as { x: number; y: number; tw: number }[],
+  pines: [] as { x: number; z: number; ry: number; s: number }[],
 }
 
 const cart: Cartridge = {
@@ -111,7 +112,15 @@ const cart: Cartridge = {
       y: rng() * H * 0.5,
       tw: rng() * 6.28,
     }))
-    console.info(`[demo-disc] scene built: ${s.terrain.faces.length} terrain quads, ${CRATES.length} crates`)
+    // a ring of pines at the fog line
+    s.pines = Array.from({ length: 8 }, (_, i) => {
+      const a = (i / 8) * Math.PI * 2 + rng() * 0.5
+      const r = 9.2 + rng() * 1.8
+      return { x: Math.sin(a) * r, z: Math.cos(a) * r, ry: rng() * 6.28, s: 1.25 + rng() * 0.5 }
+    })
+    console.info(
+      `[demo-disc] scene built: ${s.terrain.faces.length} terrain quads, ${CRATES.length} crates, ${s.pines.length} pines`,
+    )
   },
 
   update(ctx: CartCtx, dt: number) {
@@ -119,7 +128,7 @@ const cart: Cartridge = {
     s.t += dt
     if (ctx.input.pressed('start')) {
       s.auto = !s.auto
-      ctx.audio.play(ctx.assets.sfx('ui'))
+      ctx.audio.play(ctx.assets.sfx('chime'))
     }
     if (ctx.input.held('left')) {
       s.ang -= dt * 1.3
@@ -154,8 +163,9 @@ const cart: Cartridge = {
       ])
     }
     for (const st of s.stars) {
-      const b = 120 + Math.round(90 * Math.sin(st.tw + s.t * 1.7))
-      if (b > 130) fb.set(st.x | 0, st.y | 0, [b, b, Math.min(255, b + 25)])
+      // gentle continuous twinkle — never a hard blink
+      const b = 150 + Math.round(55 * Math.sin(st.tw + s.t * 1.1))
+      fb.set(st.x | 0, st.y | 0, [b, b, Math.min(255, b + 22)])
     }
 
     // camera on its dolly
@@ -169,22 +179,36 @@ const cart: Cartridge = {
     // the set
     r3.mesh(s.terrain!, {})
     r3.mesh(ctx.assets.mesh('monolith'), { x: 0, y: 0, z: 0 })
+    r3.mesh(ctx.assets.mesh('torii'), { x: 0, y: ground(0, 7.4), z: 7.4, s: 1.15 })
+    const pine = ctx.assets.mesh('pine')
+    for (const p of s.pines) {
+      r3.mesh(pine, { x: p.x, y: ground(p.x, p.z) - 0.05, z: p.z, rotY: p.ry, s: p.s })
+    }
     const crate = ctx.assets.mesh('crate')
     CRATES.forEach(([cx, rot, cz], i) => {
       r3.mesh(crate, { x: cx, y: ground(cx, cz) + 0.85, z: cz, rotY: rot, s: 0.85 - (i % 2) * 0.15 })
     })
-    // memory cards in orbit
+    // gems in orbit around the monolith
+    const gem = ctx.assets.mesh('gem')
     for (let i = 0; i < 3; i++) {
       const a = s.t * 0.9 + (i * Math.PI * 2) / 3
-      r3.mesh(crate, {
+      r3.mesh(gem, {
         x: Math.sin(a) * 2.6,
         y: 2.5 + Math.sin(s.t * 1.3 + i * 2.1) * 0.4,
         z: Math.cos(a) * 2.6,
-        rotY: s.t * (1 + i * 0.3),
-        rotX: s.t * 0.7,
-        s: 0.4,
+        rotY: s.t * (1.4 + i * 0.3),
+        rotX: s.t * 0.8,
+        s: 0.85,
       })
     }
+    // the save point: a memory card hovering over the crate stash
+    r3.mesh(ctx.assets.mesh('memcard'), {
+      x: 4.5,
+      y: ground(4.5, 2.2) + 2.3 + Math.sin(s.t * 1.6) * 0.25,
+      z: 2.2,
+      rotY: s.t * 0.9,
+      s: 0.95,
+    })
 
     const tris = r3.flush()
 

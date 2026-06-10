@@ -94,7 +94,7 @@ a:hover {
 
 /* ── the monitor sits in the dark and lights the room ─────────────────── */
 #app {
-  width: min(94vw, 900px);
+  width: min(96vw, 1180px);
 }
 
 .chassis {

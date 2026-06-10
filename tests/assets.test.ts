@@ -22,12 +22,12 @@ describe('asset folder', () => {
     for (const id of ['ship', 'drone', 'tile-rock', 'tile-spire']) {
       expect(assets.sprite(id).frames.length).toBeGreaterThan(0)
     }
-    for (const id of ['laser', 'boom', 'hit', 'ui']) {
+    for (const id of ['laser', 'boom', 'hit', 'ui', 'chime']) {
       expect(assets.sfx(id).duration).toBeGreaterThan(0)
     }
     expect(assets.map('ground').tileSize).toBe(8)
     expect(assets.font('micro').height).toBe(5)
-    for (const id of ['crate', 'monolith']) {
+    for (const id of ['crate', 'monolith', 'gem', 'pine', 'torii', 'memcard']) {
       expect(assets.mesh(id).faces.length).toBeGreaterThan(0)
     }
   })

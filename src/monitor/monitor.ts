@@ -29,7 +29,7 @@ export const CONNECTION_LABEL: Record<Connection, string> = {
 const FIELD_RATE = 60 // fields per second the deflection runs at
 
 // P22-ish phosphor time constants (seconds). Blue dies first; red lingers.
-const TAU_FAST: [number, number, number] = [0.0034, 0.0026, 0.0019]
+const TAU_FAST: [number, number, number] = [0.0048, 0.0038, 0.0028]
 const TAU_SLOW = 0.045
 const SLOW_TINT: [number, number, number] = [1.0, 0.5, 0.26] // the orange afterglow
 
@@ -191,7 +191,7 @@ export class Monitor {
     if (this.osdT > 0) this.osdT -= dt
 
     // measure the display so we can report beam slices per field
-    this.dtEma += (dt - this.dtEma) * 0.05
+    this.dtEma += (dt - this.dtEma) * 0.08
     if (++this.frames === 240) {
       const hz = 1 / this.dtEma
       console.info(
@@ -256,7 +256,16 @@ export class Monitor {
     this.pDecode.draw(this.tVideo)
 
     // 3 — beam scan + phosphor integration (the temporal core)
-    const span = Math.min(dt * FIELD_RATE, 1)
+    // Phase-lock the beam window to the display: rAF timestamps jitter by
+    // ~1ms, and a free-running window makes each line's age (and thus its
+    // share of presented energy) wobble frame to frame — visible shimmer.
+    // Snapping to exactly 1/N fields per refresh keeps every line's phase
+    // relationship constant: rock steady at 60 Hz, stable roll at 120+.
+    const fieldsPerRefresh = this.dtEma * FIELD_RATE
+    const slices = Math.max(1, Math.round(1 / fieldsPerRefresh))
+    const ideal = 1 / slices
+    const span =
+      Math.abs(fieldsPerRefresh - ideal) < ideal * 0.15 ? ideal : Math.min(fieldsPerRefresh, 1)
     this.fieldPhase = (this.fieldPhase + span) % 1
     const field = this.scan480i ? (Math.floor(this.fieldPhase * 2) % 2 === 0 ? 0.25 : -0.25) : 0
     const vroll = switchEnv > 0 ? switchEnv * switchEnv * 0.4 * Math.sin(t * 50) : 0
@@ -374,8 +383,8 @@ export class Monitor {
     const cssW = this.canvas.clientWidth
     const cssH = this.canvas.clientHeight
     if (cssW < 8 || cssH < 8) return false
-    const w = Math.min(1920, Math.round(cssW * dpr))
-    const h = Math.min(1440, Math.round(cssH * dpr))
+    const w = Math.min(2304, Math.round(cssW * dpr))
+    const h = Math.min(1728, Math.round(cssH * dpr))
     if (w === this.outW && h === this.outH) return true
 
     const t0 = performance.now()

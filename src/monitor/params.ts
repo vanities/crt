@@ -30,10 +30,12 @@ export const KNOBS: KnobDef[] = [
   { id: 'curvature', label: 'CURVE', min: 0, max: 1, def: 0.3, panel: 'rear', fmt: pct },
   { id: 'glow', label: 'GLOW', min: 0, max: 1, def: 0.4, panel: 'rear', fmt: pct },
   { id: 'persist', label: 'PERSIST', min: 0, max: 1, def: 0.3, panel: 'rear', fmt: pct },
-  { id: 'noise', label: 'NOISE', min: 0, max: 1, def: 0.07, panel: 'rear', fmt: pct },
+  { id: 'noise', label: 'NOISE', min: 0, max: 1, def: 0.04, panel: 'rear', fmt: pct },
 ]
 
-const STORE_KEY = 'crt.params.v1'
+// v2: calmer NOISE default + phase-locked beam — old stored values would
+// keep the shimmer people complained about
+const STORE_KEY = 'crt.params.v2'
 
 export class Params {
   private values = new Map<string, number>()
