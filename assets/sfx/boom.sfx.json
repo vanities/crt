@@ -1,0 +1,9 @@
+{
+  "id": "boom",
+  "wave": "noise",
+  "freq": { "start": 700, "end": 55, "curve": "exp" },
+  "duration": 0.5,
+  "attack": 0.002,
+  "release": 0.2,
+  "volume": 0.75
+}

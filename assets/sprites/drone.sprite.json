@@ -1,0 +1,30 @@
+{
+  "id": "drone",
+  "palette": {
+    ".": null,
+    "M": "#ff5ac8",
+    "P": "#8a2d8f",
+    "G": "#7dff6a"
+  },
+  "frames": [
+    [
+      "..MMMMM..",
+      ".MMPPPMM.",
+      "MMPGPGPMM",
+      "MMPPPPPMM",
+      ".M.MMM.M.",
+      "M..M.M..M",
+      ".M.....M."
+    ],
+    [
+      "..MMMMM..",
+      ".MMPPPMM.",
+      "MMPGPGPMM",
+      "MMPPPPPMM",
+      ".M.MMM.M.",
+      ".M.M.M.M.",
+      "M.......M"
+    ]
+  ],
+  "fps": 6
+}

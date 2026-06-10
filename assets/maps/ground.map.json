@@ -1,0 +1,13 @@
+{
+  "id": "ground",
+  "tileSize": 8,
+  "legend": {
+    ".": null,
+    "s": "tile-spire",
+    "r": "tile-rock"
+  },
+  "rows": [
+    ".....s.......s.......s.......s.......s..",
+    "rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr"
+  ]
+}

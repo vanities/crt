@@ -1,0 +1,9 @@
+{
+  "id": "laser",
+  "wave": "square",
+  "freq": { "start": 880, "end": 160, "curve": "exp" },
+  "duration": 0.16,
+  "attack": 0.002,
+  "release": 0.05,
+  "volume": 0.4
+}

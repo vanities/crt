@@ -1,0 +1,32 @@
+{
+  "id": "ship",
+  "palette": {
+    ".": null,
+    "W": "#dce6f5",
+    "D": "#5a6a85",
+    "C": "#46d8ff",
+    "F": "#ff8a30",
+    "Y": "#ffd24a"
+  },
+  "frames": [
+    [
+      "..WW........",
+      "..WDWWWW....",
+      "FYWDCCWWWWW.",
+      "FYWDCCWWWWWW",
+      "FYWDCCWWWWW.",
+      "..WDWWWW....",
+      "..WW........"
+    ],
+    [
+      "..WW........",
+      "..WDWWWW....",
+      "YFWDCCWWWWW.",
+      "YFWDCCWWWWWW",
+      "YFWDCCWWWWW.",
+      "..WDWWWW....",
+      "..WW........"
+    ]
+  ],
+  "fps": 12
+}

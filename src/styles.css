@@ -1,0 +1,317 @@
+/* ── the room ─────────────────────────────────────────────────────────── */
+* {
+  box-sizing: border-box;
+  margin: 0;
+}
+
+:root {
+  --steel-hi: #34383f;
+  --steel: #26292e;
+  --steel-lo: #1a1c20;
+  --line: #0c0d0f;
+  --text: #9aa0a8;
+  --text-dim: #5d636b;
+  --led: #49ff84;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background:
+    radial-gradient(120% 90% at 50% 0%, #14171d 0%, #0a0c10 55%, #06070a 100%);
+  color: var(--text);
+  font-family: 'SF Mono', ui-monospace, Menlo, monospace;
+  display: grid;
+  place-items: center;
+  padding: 24px 12px;
+}
+
+#app {
+  width: min(94vw, 900px);
+}
+
+/* ── chassis ──────────────────────────────────────────────────────────── */
+.chassis {
+  background: linear-gradient(180deg, var(--steel-hi) 0%, var(--steel) 30%, var(--steel-lo) 100%);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    inset 0 -2px 6px rgba(0, 0, 0, 0.5),
+    0 24px 60px rgba(0, 0, 0, 0.65);
+  padding: 14px 18px 16px;
+}
+
+.crt-top {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 2px 4px 10px;
+}
+
+.vents {
+  flex: 1;
+  height: 12px;
+  background: repeating-linear-gradient(
+    90deg,
+    transparent 0 6px,
+    rgba(0, 0, 0, 0.5) 6px 8px
+  );
+  border-radius: 2px;
+  opacity: 0.6;
+}
+
+.badge {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  white-space: nowrap;
+}
+
+.brand {
+  color: #c8ccd2;
+  font-weight: 700;
+  letter-spacing: 4px;
+  font-size: 13px;
+}
+
+.model {
+  color: var(--text-dim);
+  font-size: 9px;
+  letter-spacing: 2px;
+}
+
+.tally {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #3a1313;
+  border: 1px solid #000;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.15);
+}
+
+.tally.on {
+  background: var(--led);
+  box-shadow: 0 0 8px var(--led), 0 0 18px rgba(73, 255, 132, 0.5);
+}
+
+/* ── screen ───────────────────────────────────────────────────────────── */
+.crt-screen {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  background: #000;
+  border-radius: 10px;
+  border: 1px solid #000;
+  box-shadow:
+    inset 0 0 0 6px #0b0c0e,
+    inset 0 0 0 7px rgba(255, 255, 255, 0.04),
+    inset 0 10px 40px rgba(0, 0, 0, 0.9);
+  overflow: hidden;
+  transition: aspect-ratio 0.25s ease;
+}
+
+.crt-screen.wide {
+  aspect-ratio: 16 / 9;
+}
+
+canvas.tube {
+  position: absolute;
+  inset: 8px;
+  width: calc(100% - 16px);
+  height: calc(100% - 16px);
+  display: block;
+  background: #000;
+  border-radius: 6px;
+}
+
+/* ── control panel ────────────────────────────────────────────────────── */
+.crt-panel {
+  padding-top: 14px;
+}
+
+.prow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  align-items: flex-start;
+}
+
+.pgroup {
+  display: flex;
+  gap: 6px;
+  padding: 6px;
+  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid rgba(0, 0, 0, 0.55);
+  border-radius: 8px;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.6), 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.pbtn {
+  appearance: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 58px;
+  padding: 7px 8px 6px;
+  background: linear-gradient(180deg, #383c43, #24272c 60%, #1c1e22);
+  border: 1px solid #0a0b0d;
+  border-radius: 5px;
+  color: var(--text);
+  font: inherit;
+  font-size: 8.5px;
+  letter-spacing: 1px;
+  cursor: pointer;
+  box-shadow: 0 2px 0 #0c0d0f, inset 0 1px 0 rgba(255, 255, 255, 0.09);
+}
+
+.pbtn:active {
+  transform: translateY(1px);
+  box-shadow: 0 1px 0 #0c0d0f, inset 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+.pbtn .led {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #161a17;
+  border: 1px solid #000;
+}
+
+.pbtn.lit .led {
+  background: var(--led);
+  box-shadow: 0 0 6px var(--led);
+}
+
+.pbtn.power {
+  border-color: #2a0d0d;
+}
+
+.pbtn.power .pbtn-label {
+  color: #d8b66a;
+}
+
+.pbtn.signal .pbtn-label {
+  color: #7ec8ff;
+}
+
+/* ── knobs ────────────────────────────────────────────────────────────── */
+.prow.knobs {
+  gap: 4px 16px;
+  padding: 12px 4px 0;
+}
+
+.knob-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  width: 56px;
+}
+
+.knob {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 32% 28%, #4a4f58, #26292e 60%, #131518 100%);
+  border: 1px solid #08090a;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.6), inset 0 1px 1px rgba(255, 255, 255, 0.12);
+  cursor: ns-resize;
+  touch-action: none;
+}
+
+.knob.grab {
+  cursor: grabbing;
+}
+
+.knob-cap {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.knob-ind {
+  position: absolute;
+  left: calc(50% - 1px);
+  top: 3px;
+  width: 2px;
+  height: 11px;
+  border-radius: 1px;
+  background: #e6e1d4;
+  box-shadow: 0 0 3px rgba(255, 255, 255, 0.35);
+}
+
+.knob-label {
+  font-size: 8px;
+  letter-spacing: 1.2px;
+  color: var(--text-dim);
+}
+
+/* ── rear drawer ──────────────────────────────────────────────────────── */
+.rear {
+  display: none;
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px dashed rgba(255, 255, 255, 0.08);
+}
+
+.rear.open {
+  display: block;
+}
+
+.rear-actions {
+  margin-top: 10px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* ── footer ───────────────────────────────────────────────────────────── */
+.foot {
+  margin-top: 14px;
+  text-align: center;
+  font-size: 10.5px;
+  line-height: 1.9;
+  color: var(--text-dim);
+}
+
+.foot b {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.foot kbd {
+  font: inherit;
+  color: #c2c8d0;
+  background: #1c1f24;
+  border: 1px solid #0b0c0e;
+  border-bottom-width: 2px;
+  border-radius: 3px;
+  padding: 0 4px;
+}
+
+/* ── fatal error card ─────────────────────────────────────────────────── */
+.fatal {
+  position: fixed;
+  inset: 0;
+  background: #06070a;
+  color: #d33;
+  display: grid;
+  place-content: center;
+  gap: 12px;
+  padding: 40px;
+  text-align: center;
+}
+
+.fatal pre {
+  color: #9aa0a8;
+  text-align: left;
+  font-size: 11px;
+  max-width: 80ch;
+  white-space: pre-wrap;
+}

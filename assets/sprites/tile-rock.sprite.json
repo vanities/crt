@@ -1,0 +1,21 @@
+{
+  "id": "tile-rock",
+  "palette": {
+    ".": null,
+    "H": "#9aa4b5",
+    "R": "#5c6678",
+    "D": "#343a48"
+  },
+  "frames": [
+    [
+      "HHRRRRHD",
+      "HRRRDRRD",
+      "RRHRRRDD",
+      "RRRRDRRD",
+      "RDRRRRHD",
+      "RRDRHRRD",
+      "RRRRRRDD",
+      "DDDDDDDD"
+    ]
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "name": "crt",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "A game engine built as a simulated PVM/BVM broadcast monitor — cartridges are signal sources, the renderer is a tube.",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "check": "tsc --noEmit && vitest run",
+    "new": "node scripts/new-asset.mjs"
+  },
+  "dependencies": {
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.3",
+    "vite": "^6.1.0",
+    "vitest": "^3.0.5"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
