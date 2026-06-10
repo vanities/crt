@@ -1,6 +1,7 @@
 import { parseSprite, type Sprite } from './sprites'
 import { parseFont, type Font } from './font'
 import { parseMap, type TileMap } from './tilemap'
+import { parseMesh, type Mesh } from './mesh'
 import { sfxSchema, errMsg, type Sfx } from './schemas'
 
 /**
@@ -14,6 +15,7 @@ const spriteFiles = import.meta.glob('/assets/sprites/*.json', { eager: true, im
 const sfxFiles = import.meta.glob('/assets/sfx/*.json', { eager: true, import: 'default' }) as Record<string, unknown>
 const mapFiles = import.meta.glob('/assets/maps/*.json', { eager: true, import: 'default' }) as Record<string, unknown>
 const fontFiles = import.meta.glob('/assets/fonts/*.json', { eager: true, import: 'default' }) as Record<string, unknown>
+const meshFiles = import.meta.glob('/assets/meshes/*.json', { eager: true, import: 'default' }) as Record<string, unknown>
 
 function build<T extends { id: string }>(
   kind: string,
@@ -42,6 +44,7 @@ export class AssetStore {
     readonly sfxs: Map<string, Sfx>,
     readonly maps: Map<string, TileMap>,
     readonly fonts: Map<string, Font>,
+    readonly meshes: Map<string, Mesh>,
   ) {}
 
   private pick<T>(map: Map<string, T>, kind: string, id: string): T {
@@ -64,6 +67,9 @@ export class AssetStore {
   font(id: string): Font {
     return this.pick(this.fonts, 'font', id)
   }
+  mesh(id: string): Mesh {
+    return this.pick(this.meshes, 'mesh', id)
+  }
 }
 
 export function loadAssets(): AssetStore {
@@ -72,8 +78,9 @@ export function loadAssets(): AssetStore {
   const sfxs = build('sfx', sfxFiles, (raw) => sfxSchema.parse(raw))
   const maps = build('map', mapFiles, parseMap)
   const fonts = build('font', fontFiles, parseFont)
+  const meshes = build('mesh', meshFiles, parseMesh)
   console.info(
-    `[assets] loaded sprites=${sprites.size} sfx=${sfxs.size} maps=${maps.size} fonts=${fonts.size} in ${(performance.now() - t0).toFixed(1)}ms`,
+    `[assets] loaded sprites=${sprites.size} sfx=${sfxs.size} maps=${maps.size} fonts=${fonts.size} meshes=${meshes.size} in ${(performance.now() - t0).toFixed(1)}ms`,
   )
-  return new AssetStore(sprites, sfxs, maps, fonts)
+  return new AssetStore(sprites, sfxs, maps, fonts, meshes)
 }

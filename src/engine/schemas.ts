@@ -53,6 +53,32 @@ export const mapSchema = z
   })
   .strict()
 
+/** assets/meshes/*.mesh.json — low-poly 3D, PS1 style. Quads encouraged.
+ *  Faces are textured (tex = a SPRITE id + uv in texel coords) or flat color. */
+export const meshSchema = z
+  .object({
+    id: z.string().min(1),
+    verts: z.array(z.tuple([z.number(), z.number(), z.number()])).min(3),
+    faces: z
+      .array(
+        z
+          .object({
+            /** 3 or 4 vertex indices, wound counter-clockwise seen from outside */
+            v: z.array(z.number().int().nonnegative()).min(3).max(4),
+            color: hexColor.optional(),
+            /** sprite id used as texture (frame 0) */
+            tex: z.string().optional(),
+            /** texel coords per vertex, required with tex */
+            uv: z.array(z.tuple([z.number(), z.number()])).min(3).max(4).optional(),
+            /** skip backface culling for this face */
+            double: z.boolean().default(false),
+          })
+          .strict(),
+      )
+      .min(1),
+  })
+  .strict()
+
 /** assets/fonts/*.font.json — bitmap fonts; glyphs are text grids ('#' = on). */
 export const fontSchema = z
   .object({
@@ -67,6 +93,7 @@ export type SpriteJson = z.infer<typeof spriteSchema>
 export type Sfx = z.infer<typeof sfxSchema>
 export type MapJson = z.infer<typeof mapSchema>
 export type FontJson = z.infer<typeof fontSchema>
+export type MeshJson = z.infer<typeof meshSchema>
 
 /** Flatten a ZodError (or anything) into one readable line. */
 export function errMsg(e: unknown): string {

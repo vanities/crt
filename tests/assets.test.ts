@@ -10,11 +10,12 @@ import { loadCartridges } from '../src/cartridges'
 describe('asset folder', () => {
   const assets = loadAssets()
 
-  it('loads all sprites, sfx, maps and fonts without errors', () => {
+  it('loads all sprites, sfx, maps, fonts and meshes without errors', () => {
     expect(assets.sprites.size).toBeGreaterThan(0)
     expect(assets.sfxs.size).toBeGreaterThan(0)
     expect(assets.maps.size).toBeGreaterThan(0)
     expect(assets.fonts.size).toBeGreaterThan(0)
+    expect(assets.meshes.size).toBeGreaterThan(0)
   })
 
   it('contains the assets the launch cartridges depend on', () => {
@@ -26,12 +27,23 @@ describe('asset folder', () => {
     }
     expect(assets.map('ground').tileSize).toBe(8)
     expect(assets.font('micro').height).toBe(5)
+    for (const id of ['crate', 'monolith']) {
+      expect(assets.mesh(id).faces.length).toBeGreaterThan(0)
+    }
   })
 
   it('every map legend entry points at a real sprite', () => {
     for (const map of assets.maps.values()) {
       for (const id of map.grid) {
         if (id !== null) expect(assets.sprites.has(id), `map references sprite "${id}"`).toBe(true)
+      }
+    }
+  })
+
+  it('every mesh texture points at a real sprite', () => {
+    for (const mesh of assets.meshes.values()) {
+      for (const face of mesh.faces) {
+        if (face.tex) expect(assets.sprites.has(face.tex), `mesh "${mesh.id}" references sprite "${face.tex}"`).toBe(true)
       }
     }
   })
@@ -52,7 +64,7 @@ describe('asset folder', () => {
 describe('cartridge registry', () => {
   it('discovers the launch cartridges in order', () => {
     const carts = loadCartridges()
-    expect(carts.map((c) => c.meta.id)).toEqual(['beam-patrol', 'test-cards'])
+    expect(carts.map((c) => c.meta.id)).toEqual(['beam-patrol', 'test-cards', 'demo-disc'])
     for (const c of carts) {
       expect(typeof c.update).toBe('function')
       expect(typeof c.draw).toBe('function')

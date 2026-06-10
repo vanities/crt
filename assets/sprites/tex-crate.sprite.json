@@ -1,0 +1,29 @@
+{
+  "id": "tex-crate",
+  "palette": {
+    "K": "#3a2415",
+    "L": "#a06a3c",
+    "M": "#c08a50",
+    "D": "#6a4426"
+  },
+  "frames": [
+    [
+      "KKKKKKKKKKKKKKKK",
+      "KLLLLLLLLLLLLLLK",
+      "KLMMDDDDDDDDMMLK",
+      "KLMMMDDDDDDMMMLK",
+      "KLDMMMDDDDMMMDLK",
+      "KLKKMMMKKMMMKKLK",
+      "KLDDDMMMMMMDDDLK",
+      "KLDDDDMMMMDDDDLK",
+      "KLDDDDMMMMDDDDLK",
+      "KLKKKMMMMMMKKKLK",
+      "KLDDMMMDDMMMDDLK",
+      "KLDMMMDDDDMMMDLK",
+      "KLMMMDDDDDDMMMLK",
+      "KLMMKKKKKKKKMMLK",
+      "KLLLLLLLLLLLLLLK",
+      "KKKKKKKKKKKKKKKK"
+    ]
+  ]
+}

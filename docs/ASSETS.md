@@ -68,6 +68,42 @@ Text-grid levels. Legend maps characters to **sprite ids** (`null` = empty).
 - Draw it: `drawTilemap(ctx.fb, ctx.assets.map('level-1'), (id) => ctx.assets.sprite(id), scrollX, y)`
 - Wraps horizontally by default (scrolling backgrounds).
 
+## Meshes — `assets/meshes/*.mesh.json`
+
+Low-poly 3D, PS1 style. Quads encouraged (they were quad machines). Faces
+are either flat-colored or textured — **textures are sprites** (frame 0,
+uv in texel coords; transparent texels punch holes). Wind faces
+counter-clockwise as seen from outside.
+
+```json
+{
+  "id": "pyramid",
+  "verts": [[-1, 0, -1], [1, 0, -1], [1, 0, 1], [-1, 0, 1], [0, 1.6, 0]],
+  "faces": [
+    { "v": [0, 4, 1], "color": "#b09060" },
+    { "v": [1, 4, 2], "color": "#907040" },
+    { "v": [2, 4, 3], "color": "#b09060" },
+    { "v": [3, 4, 0], "color": "#907040" },
+    { "v": [0, 1, 2, 3], "tex": "tex-floor", "uv": [[0, 0], [8, 0], [8, 8], [0, 8]], "double": true }
+  ]
+}
+```
+
+Draw it with the software rasterizer (`src/engine/r3d.ts` — affine
+texturing, vertex snap, painter's sort, Bayer-dithered 15-bit shading,
+fog; the jank is the point):
+
+```ts
+import { Renderer3D } from '../../engine/r3d'
+const r3 = new Renderer3D(ctx.fb, (id) => ctx.assets.sprite(id), 60 /* fov */)
+r3.lookAt([0, 2, -8], [0, 1, 0])
+r3.mesh(ctx.assets.mesh('pyramid'), { x: 0, rotY: t, s: 1.5 })
+const tris = r3.flush()
+```
+
+See `src/cartridges/demo-disc/cart.ts` for a full scene (terrain,
+instances, fog, camera dolly).
+
 ## Fonts — `assets/fonts/*.font.json`
 
 Bitmap fonts are assets too — glyphs are text grids (`#` on, `.` off),

@@ -1,0 +1,21 @@
+{
+  "id": "tex-floor",
+  "palette": {
+    "G": "#2c5448",
+    "H": "#34604f",
+    "D": "#1c343a",
+    "E": "#224044"
+  },
+  "frames": [
+    [
+      "GGGGDDDD",
+      "GHGGDDDD",
+      "GGGGDEDD",
+      "GGGGDDDD",
+      "DDDDGGGG",
+      "DDDDGGHG",
+      "DEDDGGGG",
+      "DDDDGGGG"
+    ]
+  ]
+}

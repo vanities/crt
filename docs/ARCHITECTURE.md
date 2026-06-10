@@ -6,6 +6,7 @@ real component has a file that plays its role:
 | PVM/BVM component | What it does on the bench | Where it lives here |
 |---|---|---|
 | Signal sources (deck, console) | feed video into the inputs | `src/cartridges/*/cart.ts` |
+| The console's GPU (PS1-era) | software-rasterized polygons into VRAM | `src/engine/r3d.ts` (affine, vertex snap, dither) |
 | Input board (LINE A/B, RGB) | source + format selection | input buttons in `panel.ts`, `main.ts` switching |
 | Encoder (in the *source*) | RGB → composite/Y-C on the wire | `shaders/encode.glsl` |
 | Decoder / jungle chip (CXA-style) | comb filter, chroma demod, picture controls | `shaders/decode.glsl` |

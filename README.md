@@ -48,8 +48,9 @@ in [docs/ASSETS.md](docs/ASSETS.md), engine anatomy in
 
 | Input | Cartridge | Why |
 |---|---|---|
-| LINE A | **BEAM PATROL** (256×224, composite) | playable shooter exercising the whole engine API |
+| LINE A | **BEAM PATROL** (256×224, composite) | playable shooter exercising the whole 2D engine API |
 | LINE B | **TEST CARDS** (320×240, RGB) | SMPTE bars, convergence grid, multiburst, dot-crawl torture, persistence demo |
+| LINE C | **DEMO DISC '97** (320×240, composite) | PS1-style software-rasterized 3D: affine texture swim, vertex wobble, painter's sort, dithered 15-bit shading, fog |
 
 Keys: arrows/WASD + Z/X + Enter (game) · P power, G degauss, 1/2 input,
 C signal, U/H/B/Y monitor modes.

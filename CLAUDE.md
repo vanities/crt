@@ -13,7 +13,7 @@ pnpm dev          # vite dev server (hot reload on asset/code change)
 pnpm check        # tsc + vitest — run before declaring any task done
 pnpm test         # vitest only
 pnpm build        # production build
-pnpm new sprite <name> | sfx <name> | map <name> | font <name> | cart <name>
+pnpm new sprite <name> | sfx <name> | map <name> | font <name> | mesh <name> | cart <name>
 ```
 
 ## Add things (the 90% cases)
@@ -23,6 +23,7 @@ pnpm new sprite <name> | sfx <name> | map <name> | font <name> | cart <name>
 | Add a sprite | create `assets/sprites/<name>.sprite.json` | `docs/ASSETS.md` |
 | Add a sound | create `assets/sfx/<name>.sfx.json` | `docs/ASSETS.md` |
 | Add a tilemap | create `assets/maps/<name>.map.json` | `docs/ASSETS.md` |
+| Add a 3D mesh (PS1-style) | create `assets/meshes/<name>.mesh.json`, draw via `Renderer3D` | `docs/ASSETS.md` |
 | Add a game | create `src/cartridges/<name>/cart.ts` with a default export | `docs/CARTRIDGES.md` |
 | Tweak the CRT look | edit `src/monitor/shaders/*.glsl` or knob defaults in `src/monitor/params.ts` | `docs/ARCHITECTURE.md` |
 

@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url'
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const [kind, name] = process.argv.slice(2)
 
-const usage = 'usage: pnpm new <sprite|sfx|map|font|cart> <kebab-name>'
+const usage = 'usage: pnpm new <sprite|sfx|map|font|mesh|cart> <kebab-name>'
 if (!kind || !name || !/^[a-z0-9][a-z0-9-]*$/.test(name)) {
   console.error(usage)
   process.exit(1)
@@ -61,6 +61,30 @@ const templates = {
       2,
     ),
     next: `use it: drawTilemap(ctx.fb, ctx.assets.map('${name}'), (id) => ctx.assets.sprite(id), ox, oy)`,
+  },
+  mesh: {
+    path: `assets/meshes/${name}.mesh.json`,
+    body: JSON.stringify(
+      {
+        id: name,
+        verts: [
+          [-1, 0, -1],
+          [1, 0, -1],
+          [1, 0, 1],
+          [-1, 0, 1],
+          [0, 1.6, 0],
+        ],
+        faces: [
+          { v: [0, 4, 1], color: '#b09060' },
+          { v: [1, 4, 2], color: '#907040' },
+          { v: [2, 4, 3], color: '#b09060' },
+          { v: [3, 4, 0], color: '#907040' },
+        ],
+      },
+      null,
+      2,
+    ),
+    next: `use it: r3.mesh(ctx.assets.mesh('${name}'), { x, y, z, rotY }) — see docs/ASSETS.md §Meshes`,
   },
   font: {
     path: `assets/fonts/${name}.font.json`,
